@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ev Fiyat Tahmini</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Ev Fiyat Tahmini</h1>
+        <form id="prediction-form" method="POST" action="/predict">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="adres">Adres</label>
+                    <select id="adres" name="adres">
+                        <option value="1 Acorn Place">1 Acorn Place</option>
+                        <option value="1 Addis Way">1 Addis Way</option>
+                        <option value="1 Ainsley Court">1 Ainsley Court</option>
+                        <option value="9D Pycombe Way">9D Pycombe Way</option>
+                        <option value="9D Shalford Way">9D Shalford Way</option>
+                        <option value="9E Margaret Street">9E Margaret Street</option>
+                        <!-- Diğer adres seçeneklerini buraya ekleyin -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="semt">Semt</label>
+                    <select id="semt" name="semt"></select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="yatak_odaları">Yatak Odaları</label>
+                    <input type="number" id="yatak_odaları" name="yatak_odaları">
+                </div>
+                <div class="form-group">
+                    <label for="banyolar">Banyolar</label>
+                    <input type="number" id="banyolar" name="banyolar">
+                </div>
+                <div class="form-group">
+                    <label for="garaj">Garaj</label>
+                    <input type="number" id="garaj" name="garaj">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="kat_alani">Kat Alanı (m²)</label>
+                    <input type="number" id="kat_alani" name="kat_alani">
+                </div>
+                <div class="form-group">
+                    <label for="insa_yili">İnşa Yılı</label>
+                    <input type="number" id="insa_yili" name="insa_yili">
+                </div>
+                <div class="form-group">
+                    <label for="sehir_merkezi_mesafesi">Şehir Merkezi Mesafesi (km)</label>
+                    <input type="number" id="sehir_merkezi_mesafesi" name="sehir_merkezi_mesafesi">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="en_yakin_istasyon_mesafesi">En Yakın İstasyon Mesafesi (km)</label>
+                    <input type="number" id="en_yakin_istasyon_mesafesi" name="en_yakin_istasyon_mesafesi">
+                </div>
+                <div class="form-group">
+                    <label for="en_yakin_okul_mesafesi">En Yakın Okul Mesafesi (km)</label>
+                    <input type="number" id="en_yakin_okul_mesafesi" name="en_yakin_okul_mesafesi">
+                </div>
+            </div>
+            <button type="button" onclick="tahminYap()">Tahmin Yap</button>
+        </form>
+        <div id="result" style="margin-top: 20px; font-size: 1.2em;"></div>
+    </div>
+
+    <script>
+        const semtler = [
+            'South Lake', 'Wandi', 'Camillo', 'Bellevue', 'Lockridge', 'Mount Richon', 'Hilbert', 'Waikiki', 'Hamersley', 'Bayswater', 'Carmel', 'Butler', 'Balga', 'Hammond Park', 'Wattle Grove', 'Bull Creek', 'Bullsbrook', 'Maida Vale', 'Koongamia', 'Mount Nasura', 'Forrestdale', 'Atwell', 'Ashby', 'Woodbridge', 'Bicton', 'Singleton', 'South Guildford', 'Armadale', 'Kenwick', 'Hamilton Hill', 'Port Kennedy', 'Roleystone', 'Glen Forrest', 'Secret Harbour', 'Herne Hill', 'Gwelup', 'Harrisdale', 'North Fremantle', 'Quinns Rocks', 'Spearwood', 'Parkwood', 'Tapping', 'Thornlie', 'Baldivis', 'Kensington', 'Kiara', 'Menora', 'Southern River', 'Bibra Lake', 'Swanbourne', 'The Vines', 'Stratton', 'North Beach', 'Haynes', 'Madeley', 'Wembley Downs', 'Bentley', 'Manning', 'Warwick', 'Queens Park', 'Medina', 'Kalamunda', 'Merriwa', 'Aubin Grove', 'Karrinyup', 'Gooseberry Hill', 'Darch', 'Hillarys', 'Alexander Heights', 'St James', 'Bassendean', 'Ardross', 'Bedfordale', 'Success', 'Ballajura', 'Leda', 'Bateman', 'Eglinton', 'Orelia', 'Beckenham', 'Edgewater', 'Helena Valley', 'East Cannington', 'Marmion', 'Maddington', 'Mount Claremont', 'Greenwood', 'Beechboro', 'Wembley', 'Iluka', 'Mundaring', 'Salter Point', 'Mount Pleasant', 'Warnbro', 'Byford', 'Willagee', 'Bertram', 'Mullaloo', 'Woodlands', 'Wellard', 'Rossmoyne', 'Beaconsfield', 'Brentwood', 'Carine', 'Beldon', 'Hillman', 'Swan View', 'Bennett Springs', 'Claremont', 'Mount Hawthorn', 'Ferndale', 'Boya', 'Aveley', 'Midland', 'High Wycombe', 'Kinross', 'Guildford', 'North Coogee', 'Gnangara', 'Ascot', 'Osborne Park', 'Karragullen', 'Sinagra', 'Darlington', 'Redcliffe', 'Pearsall', 'Huntingdale', 'Dayton', 'Morley', 'Balcatta', 'Kwinana Town Centre', 'City Beach', 'Two Rocks', 'Kallaroo', 'Banksia Grove', 'Noranda', 'Yangebup', 'Mindarie', 'Calista', 'Marangaroo', 'Mount Helena', 'Duncraig', 'Kewdale', 'Shoalwater', 'Melville', 'Leeming', 'Walliston', 'Kardinya', 'Landsdale', 'Serpentine', 'Brookdale', 'Coolbellup', 'Jandakot', 'Darling Downs', 'Hilton', 'Parkerville', 'Stoneville', 'Coogee', 'Mirrabooka', 'Subiaco', 'Lesmurdie', 'Jane Brook', 'Mahogany Creek', 'Middle Swan', 'Forrestfield', 'South Fremantle', 'Rockingham', 'Dalkeith', 'Cannington', 'Seville Grove', 'Safety Bay', 'Mosman Park', 'Ocean Reef', 'Jolimont', 'Carramar', 'Viveash', 'Sawyers Valley', 'Connolly', 'Joondalup', 'Nedlands', 'Ridgewood', 'Myaree', 'Applecross', 'Midvale', 'Ashfield', 'Clarkson', 'Mardella', 'Burns Beach', 'Rivervale', 'Craigie', 'Langford', 'Hocking', 'Parmelia', 'Piara Waters', 'Baskerville', 'Cooloongup', 'Nollamara', 'Palmyra', 'Waterford', 'Currambine', 'Beeliar', 'Sorrento', 'Churchlands', 'Woodvale', 'Trigg', 'Stirling', 'Alkimos', 'Dianella', 'Bickley', 'Heathridge', 'Cockburn Central', 'Mundijong', 'Willetton', 'Westminster', 'Wilson', 'Brabham', 'Booragoon', 'Caversham', 'Samson', 'Ellenbrook', 'Wanneroo', 'Orange Grove', 'Padbury', 'White Gum Valley', 'Yokine', 'Cloverdale', 'Floreat', 'Canning Vale', 'Burswood', 'North Lake', 'Koondoola', 'Kingsley', 'Karawara', 'West Perth', 'Attadale', 'Crawley', 'East Victoria Park', 'Joondanna', 'Lynwood', 'Tuart Hill', 'South Perth', 'Greenmount', 'Highgate', 'Scarborough', 'Watermans Bay', 'Inglewood', 'Cottesloe', 'Maylands', 'East Fremantle', 'Leederville', 'Shelley', 'Daglish', 'Como', 'Mount Lawley', 'Glendalough', 'Riverton', 'Murdoch', 'Eden Hill', 'Girrawheen', 'Kelmscott', 'Doubleview', 'Champion Lakes', 'West Leederville', 'Coolbinia', 'Yanchep', 'Henley Brook', 'Peppermint Grove', 'Karnup', 'Hazelmere', 'Wooroloo', 'Alfred Cove', 'Bedford', 'Jarrahdale', 'Jindalee', 'Lathlain', 'Embleton', 'Martin', 'Oakford', 'Brigadoon', 'Winthrop', 'Fremantle', 'North Perth', 'Cardup', 'Gosnells', 'Gidgegannup', 'Shenton Park', 'Innaloo', "O'Connor", 'Pickering Brook', 'Whitby', 'Golden Bay', 'West Swan', 'Hovea', 'Northbridge', 'Millendon', 'Casuarina', 'Upper Swan', 'Mariginiup', 'Victoria Park', 'Oldbury', 'Chidlow', 'Carabooda', 'Belhus', 'Belmont', 'East Perth', 'Kwinana Beach', 'Keysbrook', 'Carlisle', 'Anketell', 'Banjup', 'Jandabup', 'Wungong', 'Wattleup', 'Hopeland', 'Neerabup', 'Treeby', 'Munster', 'Hope Valley', 'Welshpool', 'Wangara', 'Naval Base'
+        ];
+
+        const semtSelect = document.getElementById("semt");
+
+        semtler.forEach(semt => {
+            const option = document.createElement("option");
+            option.value = semt;
+            option.textContent = semt;
+            semtSelect.appendChild(option);
+        });
+
+        function tahminYap() {
+            const form = document.getElementById("prediction-form");
+            const formData = new FormData(form);
+
+            fetch("/predict", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = `Tahmin edilen ev fiyatı: ${data.predicted_price} TL`;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>
